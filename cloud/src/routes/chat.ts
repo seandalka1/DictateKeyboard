@@ -43,7 +43,7 @@ export async function handleChat(
   if (messages.length === 0) {
     return apiError(400, 'Field "messages" is missing.', 'missing_messages', 'invalid_request_error');
   }
-  if (messages.some((m) => detectScamContent(textOf(m.content)))) {
+  if (messages.some((m) => m.role === 'user' && detectScamContent(textOf(m.content)))) {
     logRefusal(env, session, 'reword', 403, started, ctx);
     return apiError(
       403,
