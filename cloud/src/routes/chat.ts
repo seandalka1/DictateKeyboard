@@ -1,6 +1,7 @@
 import { authenticate, touch } from '../auth';
 import { OPENAI_BASE, chatCostNano, costToSeconds, type Env, type Limits } from '../config';
 import { budgetAllows, logUsage, settleBudget, walletStub } from '../meter';
+import { detectScamContent } from '../scam';
 import { NO_STORE, apiError, estimateTokens } from '../util';
 import { debitError, logRefusal } from './transcriptions';
 
@@ -41,6 +42,16 @@ export async function handleChat(
   const messages = Array.isArray(payload.messages) ? payload.messages : [];
   if (messages.length === 0) {
     return apiError(400, 'Field "messages" is missing.', 'missing_messages', 'invalid_request_error');
+  }
+  const requestText = messages.map((m) => textOf(m.content)).join(' ');
+  if (detectScamContent(requestText)) {
+    logRefusal(env, session, 'reword', 403, started, ctx);
+    return apiError(
+      403,
+      'Dictate Cloud cannot process requests that appear to facilitate scams or fraud.',
+      'suspected_scam_content',
+      'invalid_request_error',
+    );
   }
 
   const inputTokens = messages.reduce((sum, m) => sum + estimateTokens(textOf(m.content)), 0);
