@@ -6,7 +6,11 @@ const SCAM_PATTERNS: RegExp[] = [
   /\b(?:share|send|give)\b.{0,50}\b(?:otp|one[\s-]*time\s*(?:password|passcode)|verification\s*code)\b/i,
 ];
 
+/** High-signal scam/fraud cues in user-supplied rewording text. */
 export function detectScamContent(text: string): boolean {
   if (!text.trim()) return false;
-  return SCAM_PATTERNS.some((pattern) => pattern.test(text));
+  return SCAM_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(text);
+  });
 }
